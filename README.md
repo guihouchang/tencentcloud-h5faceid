@@ -114,6 +114,7 @@ faceRecordResponse, err := client.QueryFaceRecord(ctx, faceRecordRequest)
 ```
 6. #### 获取 H5 人脸识别页面 URL
 通过 GetFaceIDURL 方法获取 H5 人脸识别页面 URL，请求参数包括订单号、姓名、身份证号、用户 ID 等：
+todo
 
 ## 配置选项
 在初始化 Face 客户端时，您可以传递以下配置选项：
