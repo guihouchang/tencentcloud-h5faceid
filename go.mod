@@ -1,4 +1,4 @@
-module github.com/guihouchang/tecentcloud-h5faceid
+module github.com/guihouchang/tencentcloud-h5faceid
 
 go 1.19
 
