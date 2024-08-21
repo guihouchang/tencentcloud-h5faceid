@@ -7,7 +7,7 @@
 ## 安装
 
 ```bash
-go get -u github.com/guihouchang/tecentcloud-h5faceid
+go get -u github.com/guihouchang/tencentcloud-h5faceid
 ```
 ## 快速开始
 以下是如何使用 faceid SDK 的示例代码
