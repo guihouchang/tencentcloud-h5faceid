@@ -17,7 +17,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"path/to/your/package/faceid"
+	"github.com/guihouchang/tencentcloud-h5faceid"
 )
 
 func main() {
