@@ -22,6 +22,8 @@ const apiTicketURL = "https://miniprogram-kyc.tencentcloudapi.com/api/oauth2/api
 const getH5FaceIDURL = "https://miniprogram-kyc.tencentcloudapi.com/api/server/h5/geth5faceid"
 
 const queryH5FaceRecordURL = "https://miniprogram-kyc.tencentcloudapi.com/api/v2/base/queryfacerecord"
+
+const defaultOptiamlURL = "https://miniprogram-kyc.tencentcloudapi.com"
 const defaultClientCredential = "client_credential"
 const defaultType = "SIGN"
 
@@ -35,18 +37,20 @@ type Face struct {
 }
 
 type config struct {
-	appID     string
-	secret    string
-	version   string
-	grantType string
+	appID         string
+	secret        string
+	version       string
+	grantType     string
+	optimalDomain string
 }
 
 type Options func(c *config)
 
 func defaultConfig() *config {
 	return &config{
-		version:   "1.0.0",
-		grantType: defaultClientCredential,
+		version:       "1.0.0",
+		grantType:     defaultClientCredential,
+		optimalDomain: defaultOptiamlURL,
 	}
 }
 
@@ -62,12 +66,17 @@ func WithSecret(secret string) Options {
 	}
 }
 
+func WithOptimalDomain(optimalDomain string) Options {
+	return func(c *config) {
+		c.optimalDomain = optimalDomain
+	}
+}
+
 func WithVersion(version string) Options {
 	return func(c *config) {
 		c.version = version
 	}
 }
-
 func httpPostRequest(ctx context.Context, endpoint string, data map[string]any, headers map[string]string) ([]byte, error) {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -296,6 +305,37 @@ func (f *Face) GetFaceID(ctx context.Context, request *H5FaceIDRequest) (*H5Face
 	return response, nil
 }
 
+func (f *Face) GetFaceWebURL(ctx context.Context, request *H5FaceURLRequest) (string, error) {
+	nonceTicket, err := f.GetNonceTicket(ctx, request.UserID)
+	if err != nil {
+		return "", err
+	}
+
+	maps := structs.ToMap(request)
+	maps["webankAppId"] = f.c.appID
+	maps["version"] = f.c.version
+	maps["nonce"] = strutil.RandomCharsV2(32)
+	maps["ticket"] = nonceTicket
+	keys := []string{"webankAppId", "orderNo", "h5faceId", "userId", "nonce", "ticket", "version"}
+	signStr, err := f.sign(keys, maps)
+	if err != nil {
+		return "", err
+	}
+	maps["sign"] = signStr
+	endpoint := f.c.optimalDomain + "/api/web/login"
+	baseURL, err := url.Parse(endpoint)
+	if err != nil {
+		return "", fmt.Errorf("invalid URL: %v", err)
+	}
+
+	query := baseURL.Query()
+	for key, value := range maps {
+		query.Set(key, strutil.MustString(value))
+	}
+	baseURL.RawQuery = query.Encode()
+	return baseURL.String(), nil
+}
+
 func (f *Face) QueryFaceRecord(ctx context.Context, request *H5FaceRecordRequest) (*H5FaceRecordResponse, error) {
 	apiTicket, err := f.GetAPITicket(ctx)
 	if err != nil {
@@ -306,10 +346,9 @@ func (f *Face) QueryFaceRecord(ctx context.Context, request *H5FaceRecordRequest
 	maps["ticket"] = apiTicket
 	maps["version"] = f.c.version
 	maps["appId"] = f.c.appID
-	nonceStr, _ := strutil.RandomString(32)
-	maps["nonceStr"] = nonceStr
+	maps["nonce"] = strutil.RandomCharsV2(32)
 	// 根据指定keys appId, orderNo, nonceStr, version, ticket进行自定排序后生成签名
-	keys := []string{"appId", "orderNo", "nonceStr", "version", "ticket"}
+	keys := []string{"appId", "orderNo", "nonce", "version", "ticket"}
 	sign, err := f.sign(keys, maps)
 	if err != nil {
 		return nil, err
@@ -330,9 +369,6 @@ func (f *Face) QueryFaceRecord(ctx context.Context, request *H5FaceRecordRequest
 	err = json.Unmarshal(resp, response)
 	if err != nil {
 		return nil, err
-	}
-	if response.Code != "0" {
-		return nil, fmt.Errorf("failed to get face record: %s", response.Msg)
 	}
 
 	return response, nil
