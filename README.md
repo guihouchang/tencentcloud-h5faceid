@@ -114,7 +114,31 @@ faceRecordResponse, err := client.QueryFaceRecord(ctx, faceRecordRequest)
 ```
 6. #### 获取 H5 人脸识别页面 URL
 通过 GetFaceIDURL 方法获取 H5 人脸识别页面 URL，请求参数包括订单号、姓名、身份证号、用户 ID 等：
-todo
+```go
+    requestFaceID := &H5FaceIDRequest{
+		IDNO:    "xxxxxxxxx",
+		Name:    "xxx",
+		OrderNO: "1234567891`",
+		UserID:  "1",
+	}
+
+	faceIDResp, err := client.GetFaceID(ctx, requestFaceID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	requestH5FaceURL := &H5FaceURLRequest{
+		OrderNo:      faceIDResp.Result.OrderNo,
+		H5FaceID:     faceIDResp.Result.H5FaceID,
+		URL:          "http://www.baidu.com",
+		ResultType:   "1",
+		UserID:       "1",
+		From:         "browser",
+		RedirectType: "1",
+	}
+
+	url, err := client.GetFaceWebURL(ctx, requestH5FaceURL)
+```
 
 ## 配置选项
 在初始化 Face 客户端时，您可以传递以下配置选项：
