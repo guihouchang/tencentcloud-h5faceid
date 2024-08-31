@@ -148,14 +148,21 @@ func httpGetRequest(ctx context.Context, endpoint string, params map[string]any,
 	return body, nil
 }
 
+func (f *Face) Reset() {
+	f.accessToken = ""
+	f.apiTicket = ""
+	f.accessTokenTTL = time.Time{}
+	f.apiTicketTTL = time.Time{}
+}
+
 func (f *Face) GetAPITicket(ctx context.Context) (string, error) {
 	accessToken, err := f.GetAccessToken(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	// 提前十分钟应该刷新token
-	now := time.Now().Add(time.Minute * -10)
+	// 提前5分钟应该刷新token
+	now := time.Now().Add(time.Minute * 5)
 	if !f.apiTicketTTL.IsZero() && now.After(f.apiTicketTTL) {
 		return f.apiTicket, nil
 	}
@@ -202,8 +209,8 @@ func (f *Face) GetAPITicket(ctx context.Context) (string, error) {
 }
 
 func (f *Face) GetAccessToken(ctx context.Context) (string, error) {
-	// 提前十分钟应该刷新token
-	now := time.Now().Add(time.Minute * -10)
+	// 提前5分钟应该刷新token
+	now := time.Now().Add(time.Minute * 5)
 	if !f.accessTokenTTL.IsZero() && now.After(f.accessTokenTTL) {
 		return f.accessToken, nil
 	}
